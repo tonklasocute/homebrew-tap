@@ -33,11 +33,10 @@ cask "git-quill" do
 
   binary "git-quill"
 
-  postflight do
-    if OS.mac? && system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
-      system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/git-quill"]
-    end
-  end
-
   # No zap stanza required
+
+  caveats <<~EOS
+    git-quill is not code-signed. If macOS blocks it, run:
+      xattr -d com.apple.quarantine "$(brew --prefix)/bin/git-quill"
+  EOS
 end
