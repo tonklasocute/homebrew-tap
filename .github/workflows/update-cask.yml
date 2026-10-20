@@ -1,0 +1,38 @@
+name: Update cask
+
+# Polls git-quill releases so no cross-repo token is needed: the workflow's
+# own GITHUB_TOKEN can read the public release and write to this repo.
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (default: latest)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency: update-cask
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Regenerate Casks/git-quill.rb
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/update-cask.sh ${{ inputs.tag }}
+      - name: Commit if changed
+        run: |
+          if git diff --quiet; then
+            echo "Cask already up to date."
+            exit 0
+          fi
+          version=$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/git-quill.rb)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "feat: update git-quill to ${version}"
+          git push
